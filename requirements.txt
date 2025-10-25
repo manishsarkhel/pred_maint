@@ -1,4 +1,2 @@
 pandas
-numpy
-time
-plotly.express
+plotly
