@@ -23,7 +23,10 @@ def generate_baseline_data():
     return baselines
 
 def generate_sensor_data(pump_id, baselines, current_pump_state, game_params):
-    """Generates new sensor data based on baseline and current state."""
+    """
+    Generates new sensor data based on baseline and current state.
+    (CORRECTED LOGIC)
+    """
     baseline = baselines[pump_id]
     data = {
         'timestamp': pd.Timestamp.now(),
@@ -32,16 +35,20 @@ def generate_sensor_data(pump_id, baselines, current_pump_state, game_params):
         'current': np.random.normal(baseline['current'], 0.2)
     }
 
-    # Introduce anomalies
+    # 1. Check if a new anomaly should start (if one isn't already active)
+    if not current_pump_state.get('inject_anomaly', False):
+        if np.random.rand() < game_params['ANOMALY_INJECT_CHANCE']:
+            current_pump_state['inject_anomaly'] = True
+            st.toast(f"Anomaly detected in {pump_id}!", icon="⚠️")
+
+    # 2. If an anomaly is active (either brand new or pre-existing), apply its effects
     if current_pump_state.get('inject_anomaly', False):
-        if np.random.rand() < 0.6:
+        # 80% chance to show high values if anomaly is active
+        # This makes the anomaly "flicker" a bit, but still be very dangerous
+        if np.random.rand() < 0.8: 
             data['vibration'] *= np.random.uniform(game_params['ANOMALY_THRESHOLD_VIBRATION'], game_params['ANOMALY_THRESHOLD_VIBRATION'] + 0.5)
             data['temperature'] += np.random.uniform(game_params['ANOMALY_THRESHOLD_TEMP'], game_params['ANOMALY_THRESHOLD_TEMP'] + 3)
             data['current'] *= np.random.uniform(1.2, 1.5)
-    else: 
-        if np.random.rand() < game_params['ANOMALY_INJECT_CHANCE']: # Use parameter
-            current_pump_state['inject_anomaly'] = True
-            st.toast(f"Anomaly detected in {pump_id}!", icon="⚠️")
 
     return data, current_pump_state
 
@@ -355,3 +362,4 @@ if 'game_state' in st.session_state and st.session_state.game_state['running']:
                 st.info("No data yet. Start the game and click 'Next Round'!")
 else:
     st.info("Select your difficulty and click 'Start Game' in the sidebar to begin!")
+
