@@ -1,4 +1,4 @@
 pandas
 numpy
 time
-plotly
+plotly.express
